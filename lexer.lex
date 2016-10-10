@@ -33,6 +33,8 @@ if 						{printLexemeInfo(LOperator);}
 then 					{printLexemeInfo(LOperator);}
 else 					{printLexemeInfo(LOperator);}
 
+[*][*]					{printLexemeInfo("power_operator");}
+
 \/\/.*					{printLexemeInfo(LComment);}
 [(][*]((([^*])*([^)])*)|((([^*])*([^)])*[*][^)]+[)]([^*])*([^)])*))*)[*][)]				{
 	int startLine = numOflines;
