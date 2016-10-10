@@ -1,1 +1,3 @@
 # lexer
+*.c
+*.out
