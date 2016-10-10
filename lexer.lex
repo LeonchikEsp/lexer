@@ -6,6 +6,7 @@
 	char * LOperator = "op";
 	char * LVariable = "var";
 	char * LInteger = "int";
+	char * LComment = "comment";
 
 	//yytext - curr lexeme
 	//yyleng - len of lexeme
@@ -32,8 +33,12 @@ if 						{printLexemeInfo(LOperator);}
 then 					{printLexemeInfo(LOperator);}
 else 					{printLexemeInfo(LOperator);}
 
+\/\/.*					{printLexemeInfo(LComment);}
+\(\*.*\*\)				{printLexemeInfo("multiline_comment");}
+
 [:][=]					{printLexemeInfo("assignment_operator");}
 ([+|\-|*|/|%|>|<])|([=|\!][=])|([>|<][=])|([&][&])|([\|][\|])	{printLexemeInfo(LOperator);}
+
 
 \(						{printLexemeInfo("open_br");}
 \)						{printLexemeInfo("close_br");}
