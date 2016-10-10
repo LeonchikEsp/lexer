@@ -34,7 +34,24 @@ then 					{printLexemeInfo(LOperator);}
 else 					{printLexemeInfo(LOperator);}
 
 \/\/.*					{printLexemeInfo(LComment);}
-\(\*.*\*\)				{printLexemeInfo("multiline_comment");}
+[(][*]((([^*])*([^)])*)|((([^*])*([^)])*[*][^)]+[)]([^*])*([^)])*))*)[*][)]				{
+	int startLine = numOflines;
+	int startSym = currPos;
+	int endSym;
+
+	for(int i = 0; i < yyleng; i++)
+	{
+		endSym = currPos;
+		currPos += 1;
+		if (yytext[i] == '\n')
+		{
+			currPos = 1;
+			numOflines += 1;
+		}
+	}
+
+	printf("multiline_comment(%s, %i, %i, %i, %i); ", yytext, startLine, numOflines, startSym, endSym);
+}
 
 [:][=]					{printLexemeInfo("assignment_operator");}
 ([+|\-|*|/|%|>|<])|([=|\!][=])|([>|<][=])|([&][&])|([\|][\|])	{printLexemeInfo(LOperator);}
