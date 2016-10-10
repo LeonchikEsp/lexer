@@ -53,13 +53,13 @@ main(int argc, char *argv[])
 {
 	if (argc != 2)
 	{
-		//printf("Usage: <./a.out> <source file> \n");
+		printf("Usage: <./a.out> <source file> \n");
 		exit(0);
 	}
 
 	yyin=fopen(argv[1], "r");
 
-	printf("(%s, %s, %s, %s)\n", "lexeme name", "line", "start position in line" , "end posi");
+	printf("(%s, %s, %s, %s)\n", "lexeme name", "line", "start position" , "end position");
 
 	yylex();
 
