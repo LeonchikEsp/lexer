@@ -41,7 +41,8 @@ else 					{printLexemeInfo(LOperator);}
 	int startSym = currPos;
 	int endSym;
 
-	for(int i = 0; i < yyleng; i++)
+	int i;
+	for(i = 0; i < yyleng; i++)
 	{
 		endSym = currPos;
 		currPos += 1;
