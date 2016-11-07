@@ -1,19 +1,60 @@
 %{
 	#include <stdio.h>
+
+	typedef int bool;
+	enum { false, true };
+
+	//array of lexems
+	char arrayOfLexems[10000][1000];
+	int arrayOfLexemsIterator = 0;
+	
+	//
+	bool filterEnabled = false;
+
 	int numOflines = 1;
 	int currPos = 1;
 
-	char * LOperator = "op";
-	char * LVariable = "var";
-	char * LInteger = "int";
-	char * LComment = "comment";
+	char* LOperator = "op";
+	char* LVariable = "var";
+	char* LInteger = "int";
+	char* LComment = "comment";
 
 	//yytext - curr lexeme
 	//yyleng - len of lexeme
 
-	printLexemeInfo(char * type)
+	addMultilineCommentLexeme(char* type, int startLine, int numOflines, 
+		int startSym, int endSym)
 	{
-		printf("%s(%s, %i, %i, %i); ", type, yytext, numOflines, currPos, currPos -1 + yyleng);
+		char lexeme[1000];
+		sprintf(lexeme,"%s(%s, %i, %i, %i, %i); ", type, yytext, startLine, 
+			numOflines, currPos, currPos - 1 + yyleng);
+ 		strcpy(arrayOfLexems[arrayOfLexemsIterator], lexeme);
+ 		currPos += yyleng;
+ 		arrayOfLexemsIterator++;
+	}
+	
+
+	addLexeme(char* type)
+	{
+		char lexeme[1000];
+		sprintf(lexeme,"%s(%s, %i, %i, %i); ", type, yytext, numOflines, currPos, currPos - 1 + yyleng);
+ 		strcpy(arrayOfLexems[arrayOfLexemsIterator], lexeme);
+ 		currPos += yyleng;
+ 		arrayOfLexemsIterator++;
+	}
+
+	printArrayOfLexems()
+	{
+		int i = 0;
+		for (i; i < arrayOfLexemsIterator; i++)
+		{
+			printf("%s", arrayOfLexems[i]);
+		}
+	}
+
+	printLexeme(char* type)
+	{
+		printf("%s(%s, %i, %i, %i); ", type, yytext, numOflines, currPos, currPos - 1 + yyleng);
  		currPos += yyleng;
 	}
 %}
@@ -22,21 +63,21 @@ digit	[0-9]
 letter	[a-zA-Z]
 
 %%
-[1-9][0-9]*				{printLexemeInfo(LInteger);}
-[0]+					{printLexemeInfo(LInteger);}
-read 					{printLexemeInfo(LOperator);}
-skip 					{printLexemeInfo(LOperator);}
-write		 			{printLexemeInfo(LOperator);}
-while 					{printLexemeInfo(LOperator);}
-do 						{printLexemeInfo(LOperator);}
-if 						{printLexemeInfo(LOperator);}
-then 					{printLexemeInfo(LOperator);}
-else 					{printLexemeInfo(LOperator);}
+[1-9][0-9]*				{addLexeme(LInteger);}
+[0]+					{addLexeme(LInteger);}
+read 					{addLexeme(LOperator);}
+skip 					{addLexeme(LOperator);}
+write		 			{addLexeme(LOperator);}
+while 					{addLexeme(LOperator);}
+do 						{addLexeme(LOperator);}
+if 						{addLexeme(LOperator);}
+then 					{addLexeme(LOperator);}
+else 					{addLexeme(LOperator);}
 
-[*][*]					{printLexemeInfo("power_operator");}
+[*][*]					{addLexeme("power_operator");}
 
-\/\/.*					{printLexemeInfo(LComment);}
-[(][*]((([^*])*([^)])*)|((([^*])*([^)])*[*][^)]+[)]([^*])*([^)])*))*)[*][)]				{
+\/\/.*					{if (!filterEnabled) addLexeme(LComment);}
+[(][*]((([^*])*([^)])*)|((([^*])*([^)])*[*][^)]+[)]([^*])*([^)])*))*)[*][)]		{
 	int startLine = numOflines;
 	int startSym = currPos;
 	int endSym;
@@ -53,20 +94,24 @@ else 					{printLexemeInfo(LOperator);}
 		}
 	}
 
-	printf("multiline_comment(%s, %i, %i, %i, %i); ", yytext, startLine, numOflines, startSym, endSym);
+	if (!filterEnabled) 
+	{
+		//printf("multiline_comment(%s, %i, %i, %i, %i); ", yytext, startLine, numOflines, startSym, endSym);
+		addMultilineCommentLexeme("multiline_comment", startLine, numOflines, startSym, endSym);
+	}
 }
 
-[:][=]					{printLexemeInfo("assignment_operator");}
-([+|\-|*|/|%|>|<])|([=|\!][=])|([>|<][=])|([&][&])|([\|][\|])	{printLexemeInfo(LOperator);}
+[:][=]					{addLexeme("assignment_operator");}
+([+|\-|*|/|%|>|<])|([=|\!][=])|([>|<][=])|([&][&])|([\|][\|])	{addLexeme(LOperator);}
 
 
-\(						{printLexemeInfo("open_br");}
-\)						{printLexemeInfo("close_br");}
-\;						{printLexemeInfo("colon");}
+\(						{addLexeme("open_br");}
+\)						{addLexeme("close_br");}
+\;						{addLexeme("colon");}
 
 [ |\f|\r|\t|\v]			{currPos+=yyleng;}
 
-[a-zA-Z_][0-9a-zA-Z_]*	{printLexemeInfo(LVariable);}
+[a-zA-Z_][0-9a-zA-Z_]*	{addLexeme(LVariable);}
 
 \n 						{numOflines++; currPos = 1;}
 
@@ -76,18 +121,30 @@ else 					{printLexemeInfo(LOperator);}
 
 main(int argc, char *argv[])
 {
-	if (argc != 2)
-	{
-		printf("Usage: <./a.out> <source file> \n");
-		exit(0);
-	}
+	filterEnabled = false;	
 
-	yyin=fopen(argv[1], "r");
+	if (argc < 2 || argc > 3) {printf("Usage: <./a.out> <source file> [<flag>] \n"); exit(0);}
 
-	printf("(%s, %s, %s, %s)\n", "lexeme name", "line", "start position" , "end position");
+	int i;
+    for (i = 1; i < argc; ++i)
+    {
+    	if (!strcmp(argv[i], "-filter"))
+    	{
+    		filterEnabled = true;
+    		//printf("flag %s\n", argv[i]);
+    	}
+    	else 
+    	{
+    		//printf("Opened %s\n", argv[i]);
+    		yyin = fopen(argv[i], "r");
+    	}
+    }
+
+	//printf("(%s, %s, %s, %s)\n", "lexeme name", "line", "start position" , "end position");
 
 	yylex();
 
+	printArrayOfLexems();
 	printf("#\nNumber of lines = %d\n", numOflines);
 
 	return 0;
